@@ -1,4 +1,7 @@
+using System.Dynamic;
 using HandlebarsDotNet;
+using Tomlyn;
+
 namespace SharpSiteGenerator.Html;
 
 public static class HtmlGenerator
@@ -39,13 +42,30 @@ public static class HtmlGenerator
             _RegisterTemplates(subdir);
         }
     }
+
+    private static Dictionary<string, object> _getThemeSettings(string path)
+    {
+        if (!File.Exists(path))
+        {
+            // No need to panic here since the theme may be simple enough to not have a settings file
+            // Just return an empty dict
+            Console.WriteLine("No theme_settings.toml file found in theme folder");
+            return new Dictionary<string, object>();
+        }
+
+        var contents = File.ReadAllText(path);
+        return Toml.ToModel(contents).ToDictionary();
+
+    }
+
     /// <summary>
     /// Compiles every file on <c>layoutDir</c> and outputs them on <c>outputDir</c>. Calls recursively on sub-folders
     /// and keeps hierarchy.
     /// </summary>
     /// <param name="layoutDir"></param>
     /// <param name="outputDir"></param>
-    private static void _CompileLayouts(string layoutDir, string outputDir)
+    /// <param name="themeSettings"></param>
+    private static void _CompileLayouts(string layoutDir, string outputDir, IDictionary<string, object> themeSettings)
     {
         var files = Directory.GetFiles(layoutDir);
         foreach (var file in files)
@@ -53,13 +73,11 @@ public static class HtmlGenerator
             var fileName = file.Split(".")[0].Split(['/', '\\']).Last() + ".html";
             var outputPath = Path.Join(outputDir, fileName);
             
-            // TODO: Implement method to pass data to layout dynamically
             var content = Handlebars.Compile(File.ReadAllText(file))(new
             {
-                title = _settings.Title,
-                content = "<h1>I come from the context!</h1>"
+                site_settings = _settings,
+                theme_settings = themeSettings
             });
-            
             
             
             File.WriteAllText(outputPath, content);
@@ -71,7 +89,7 @@ public static class HtmlGenerator
             if (!Directory.Exists(newOutputDir))
                 Directory.CreateDirectory(newOutputDir);
             // Actual folder name
-            _CompileLayouts(subdir, newOutputDir);
+            _CompileLayouts(subdir, newOutputDir, themeSettings);
         }
     }
     
@@ -87,6 +105,8 @@ public static class HtmlGenerator
         {
             throw new DirectoryNotFoundException("Could not find the \"theme\" directory in current project");
         }
+
+        var themeSettings = _getThemeSettings(Path.Join(themePath, _settings.ThemeSettingsFileName));
         
         var templateDir = Path.Join(themePath, _settings.TemplatesDirectoryName);
         if (Directory.Exists(templateDir))
@@ -113,6 +133,6 @@ public static class HtmlGenerator
             Directory.CreateDirectory(_settings.OutputDir);
         }
         
-        _CompileLayouts(layoutsDir, _settings.OutputDir);
+        _CompileLayouts(layoutsDir, _settings.OutputDir, themeSettings);
     }
 }

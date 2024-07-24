@@ -28,6 +28,7 @@ public class SiteSettings
     
     // This might change once we incorporate cli arguments
     public string BasePath { get; set; } = Directory.GetCurrentDirectory();
+    public readonly string ThemeSettingsFileName = "theme_settings.toml";
     public readonly string ThemeDirectoryName = "theme";
     public readonly string LayoutsDirectoryName = "layouts";
     public readonly string TemplatesDirectoryName = "templates";
@@ -53,12 +54,12 @@ public class SiteSettings
 
         Url = configFile["url"].ToString() ?? throw new InvalidOperationException("Could not find site url in settings.toml");
         Title = configFile["title"].ToString() ?? throw new InvalidOperationException("Could not find site title in settings.toml");
-        if (configFile.TryGetValue("indexFileName", out var value2))
+        if (configFile.TryGetValue("index_file_name", out var value2))
         {
             IndexFileName = value2.ToString();
         }
 
-        OutputDir = configFile.TryGetValue("outputDir", out var value1) ? 
+        OutputDir = configFile.TryGetValue("output_dir", out var value1) ? 
             Path.GetFullPath(value1.ToString()) : 
             Path.Join(BasePath, "build");
         
