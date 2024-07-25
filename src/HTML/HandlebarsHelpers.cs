@@ -15,10 +15,22 @@ public static class HandlebarsHelpers
         // Registering default helpers
         HandlebarsDotNet.Helpers.HandlebarsHelpers.Register(handlebarsContext);
         
+        // Compile the header template
         handlebarsContext.RegisterHelper("load_header", (context, arguments) =>
         {
             var baseString =  "{{{> " + (context["page_settings"] as TomlTable)!["header_template"] + "}}}";
             return handlebarsContext.Compile(baseString)(context);
+        });
+        
+        // Get the proper link to a page in site
+        handlebarsContext.RegisterHelper("reference_page", (context, arguments) =>
+        {
+            if (arguments.Length != 1)
+            {
+                throw new HandlebarsException(
+                    $"The \"reference_page\" helper takes only one argument, but {arguments.Length} were provided");
+            }
+            return (context["site_settings"] as SiteSettings)!.Url + "/" + arguments[0] + ".html";
         });
         
         // Shell block helper
