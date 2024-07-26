@@ -16,10 +16,18 @@ public static class HandlebarsHelpers
         HandlebarsDotNet.Helpers.HandlebarsHelpers.Register(handlebarsContext);
         
         // Compile the header template
-        handlebarsContext.RegisterHelper("load_header", (context, arguments) =>
+        handlebarsContext.RegisterHelper("load_header", (output, context, arguments) =>
         {
-            var baseString =  "{{{> " + (context["page_settings"] as TomlTable)!["header_template"] + "}}}";
-            return handlebarsContext.Compile(baseString)(context);
+            if ((context["page_settings"] as TomlTable)!.ContainsKey("header_template"))
+            {
+                var baseString =  "{{{> " + (context["page_settings"] as TomlTable)!["header_template"] + " this}}}";
+                output.WriteSafeString(baseString);
+                //return handlebarsContext.Compile(baseString)(context);
+            }
+
+            var def = $"<head>\n\t<title>{(context["site_settings"] as SiteSettings)!.Title}</title>\n</head>";
+            output.WriteSafeString(def);
+            //return def;
         });
         
         // Get the proper link to a page in site

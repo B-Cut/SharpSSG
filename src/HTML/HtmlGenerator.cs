@@ -86,7 +86,8 @@ public static class HtmlGenerator
             {
                 site_settings = Settings,
                 theme_settings = themeSettings["general"],
-                page_settings = pageSettings
+                page_settings = pageSettings,
+                template_settings = themeSettings["template"]
             });
             
             
