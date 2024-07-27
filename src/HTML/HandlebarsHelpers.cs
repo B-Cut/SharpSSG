@@ -18,16 +18,18 @@ public static class HandlebarsHelpers
         // Compile the header template
         handlebarsContext.RegisterHelper("load_header", (output, context, arguments) =>
         {
-            if ((context["page_settings"] as TomlTable)!.ContainsKey("header_template"))
+            if (context["page_settings"] is null ||
+                !(context["page_settings"] as TomlTable)!.ContainsKey("header_template"))
             {
+                var title = (context["site_settings"] as SiteSettings)!.Title;
+                
+                var def = $"<head>\n\t<title>{title}</title>\n</head>";
+                output.WriteSafeString(def);
+            }
+            else{
                 var baseString =  "{{{> " + (context["page_settings"] as TomlTable)!["header_template"] + " this}}}";
                 output.WriteSafeString(baseString);
-                //return handlebarsContext.Compile(baseString)(context);
             }
-
-            var def = $"<head>\n\t<title>{(context["site_settings"] as SiteSettings)!.Title}</title>\n</head>";
-            output.WriteSafeString(def);
-            //return def;
         });
         
         // Get the proper link to a page in site
@@ -42,14 +44,17 @@ public static class HandlebarsHelpers
         });
         
         // Shell block helper
-        // TODO: Needs refactoring
-        handlebarsContext.RegisterHelper("shell", (options, context, arguments) =>
+        // TODO: Refactor to add ability to load a shell from a file
+        handlebarsContext.RegisterHelper("shell", (output, options, context, arguments) =>
         {
-            
-            var head = "<!DOCTYPE html5>\n<html>\n\t{{{>" + $"{context["page_settings.header_template"]}" + "}}}\n";
+
+            var head = "<!DOCTYPE html5>\n<html>\n\t{{load_header}}\n";
             var body = $"\t<body>\n\t\t{options.Template()}\n\t</body>\n";
             var footer = "</html>";
-            return  head + body + footer;
+
+            var content = handlebarsContext.Compile(head + body + footer)(context.Value);
+            
+            output.WriteSafeString(content);
         });
         
     }
