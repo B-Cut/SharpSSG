@@ -4,16 +4,24 @@ using Tomlyn.Model;
 
 namespace SharpSiteGenerator.Html;
 
-public static class HtmlGenerator
+/// <summary>
+/// This class generates HTML using the handlebars templating engine
+/// </summary>
+public class HandlebarsHtmlGenerator : IHtmlGenerator
 {
-    // A reference to SiteSettings, just so I don't have to get the Instance all the time
-    private static readonly SiteSettings Settings = SiteSettings.Instance;
-    private static readonly List<string> ValidExtensions = [".html", "htm", ".hbs", ".handlebars"];
-    
-    
-    private static bool _checkExtension(string filename)
+    private readonly SiteSettings _settings;
+    private readonly List<string> _validExtensions;
+    public HandlebarsHtmlGenerator(SiteSettings? settings = null, List<string>? validExtensions = null)
     {
-        return ValidExtensions.Any(filename.EndsWith);
+        // A reference to SiteSettings, just so I don't have to get the Instance all the time
+        _settings = settings ?? new SiteSettings();
+        _validExtensions = validExtensions ?? [".html", "htm", ".hbs", ".handlebars"];
+    }
+    
+    
+    private bool _checkExtension(string filename)
+    {
+        return _validExtensions.Any(filename.EndsWith);
     }
 
     /// <summary>
@@ -21,7 +29,7 @@ public static class HtmlGenerator
     /// </summary>
     /// <param name="context">Handlebars context </param>
     /// <param name="dir">Templates directory</param>
-    private static void _RegisterTemplates(IHandlebars context, string dir)
+    private void _RegisterTemplates(IHandlebars context, string dir)
     {
         // Get all files that end in one of the valid extensions
         var files = Directory.GetFiles(dir)
@@ -44,7 +52,7 @@ public static class HtmlGenerator
         }
     }
 
-    private static TomlTable _getThemeSettings(string path)
+    private TomlTable _getThemeSettings(string path)
     {
         if (!File.Exists(path))
         {
@@ -67,7 +75,7 @@ public static class HtmlGenerator
     /// <param name="layoutDir">path to layouts directory</param>
     /// <param name="outputDir">path to output</param>
     /// <param name="themeSettings">Dictionary containing the site settings</param>
-    private static void _CompileLayouts(IHandlebars context, string layoutDir, string outputDir, TomlTable themeSettings)
+    private void _CompileLayouts(IHandlebars context, string layoutDir, string outputDir, TomlTable themeSettings)
     {
         var files = Directory.GetFiles(layoutDir);
         foreach (var file in files)
@@ -84,7 +92,7 @@ public static class HtmlGenerator
             
             var content = func(new
             {
-                site_settings = Settings,
+                site_settings = _settings,
                 theme_settings = themeSettings["general"],
                 page_settings = pageSettings,
                 template_settings = themeSettings["template"]
@@ -107,22 +115,22 @@ public static class HtmlGenerator
     /// <summary>
     /// Compiles the contents of the <c>templates</c> directory as valid HTML.
     /// </summary>
-    public static void CompileHtml()
+    public void GenerateHtml()
     {
         // We first ensure that the project has a theme folder, containing a layouts folder with an index file.
         // A templates folder inside themes is optional.
-        var themePath = Path.Join(Settings.BasePath, Settings.ThemeDirectoryName);
+        var themePath = Path.Join(_settings.BasePath, _settings.ThemeDirectoryName);
         if (!Directory.Exists(themePath))
         {
             throw new DirectoryNotFoundException("Could not find the \"theme\" directory in current project");
         }
 
-        var themeSettings = _getThemeSettings(Path.Join(themePath, Settings.ThemeSettingsFileName));
+        var themeSettings = _getThemeSettings(Path.Join(themePath, _settings.ThemeSettingsFileName));
         
         
         var handlebarsContext = Handlebars.Create();
         
-        var templateDir = Path.Join(themePath, Settings.TemplatesDirectoryName);
+        var templateDir = Path.Join(themePath, _settings.TemplatesDirectoryName);
         if (Directory.Exists(templateDir))
         {
             _RegisterTemplates(handlebarsContext, templateDir);
@@ -134,17 +142,17 @@ public static class HtmlGenerator
             throw new DirectoryNotFoundException("Could not find the \"layouts\" directory inside theme");
         }
         
-        var indexPath = Path.Join(layoutsDir, Settings.IndexFileName);
+        var indexPath = Path.Join(layoutsDir, _settings.IndexFileName);
 
         if (!File.Exists(indexPath))
         {
-            throw new FileNotFoundException($"Could not find the index layout \"{Settings.IndexFileName}\" inside layouts");
+            throw new FileNotFoundException($"Could not find the index layout \"{_settings.IndexFileName}\" inside layouts");
         }
         
         //TODO: Compile to temp folder before going straight to build
-        if (!Directory.Exists(Settings.OutputDir))
+        if (!Directory.Exists(_settings.OutputDir))
         {
-            Directory.CreateDirectory(Settings.OutputDir);
+            Directory.CreateDirectory(_settings.OutputDir);
         }
         
         
@@ -153,6 +161,6 @@ public static class HtmlGenerator
         
         HandlebarsHelpers.Register(handlebarsContext);
         
-        _CompileLayouts(handlebarsContext, layoutsDir, Settings.OutputDir, themeSettings);
+        _CompileLayouts(handlebarsContext, layoutsDir, _settings.OutputDir, themeSettings);
     }
 }

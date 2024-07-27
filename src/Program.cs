@@ -3,11 +3,12 @@
 using SharpSiteGenerator;
 using SharpSiteGenerator.Html;
 
-var settings = SiteSettings.Instance;
+var settings = new SiteSettings();
+IHtmlGenerator htmlGenerator = new HandlebarsHtmlGenerator(settings);
 
 try
 {
-    HtmlGenerator.CompileHtml();
+    htmlGenerator.GenerateHtml();
 }
 catch (Exception ex)
 {

@@ -42,6 +42,7 @@ public static class HandlebarsHelpers
         });
         
         // Shell block helper
+        // TODO: Needs refactoring
         handlebarsContext.RegisterHelper("shell", (options, context, arguments) =>
         {
             

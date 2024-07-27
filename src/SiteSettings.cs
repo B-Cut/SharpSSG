@@ -10,21 +10,6 @@ namespace SharpSiteGenerator;
 /// </summary>
 public class SiteSettings
 {
-    private static SiteSettings instance;
-
-    public static SiteSettings Instance
-    {
-        get
-        {
-            if (instance is null)
-            {
-                instance = new SiteSettings();
-            }
-            return instance;
-        }
-        set => instance = value;
-    }
-    
     
     // This might change once we incorporate cli arguments
     public string BasePath { get; set; } = Directory.GetCurrentDirectory();
@@ -44,7 +29,7 @@ public class SiteSettings
     /// Initializes the <c>SiteSettings</c> object containing the global program settings, it will look for the
     /// settings.toml file in the current directory
     /// </summary>
-    private SiteSettings()
+    public SiteSettings()
     {
         var configText = File.ReadAllText(Path.Join(BasePath, "settings.toml"));
         var configFile = Toml.ToModel(configText);
